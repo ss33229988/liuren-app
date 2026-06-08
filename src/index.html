@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小六壬起卦器 · AI增强版</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-primary: #f5f0e8;
+      --bg-secondary: #ffffff;
+      --text-primary: #3d2c1e;
+      --text-secondary: #6b5744;
+      --accent: #8b4513;
+      --accent-light: #a0522d;
+      --border: #d4c4a8;
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --daan-color: #2e7d32; --daan-bg: #e8f5e9;
+      --liulian-color: #1565c0; --liulian-bg: #e3f2fd;
+      --suxi-color: #c62828; --suxi-bg: #ffebee;
+      --chikou-color: #6a1b9a; --chikou-bg: #f3e5f5;
+      --xiaoji-color: #558b2f; --xiaoji-bg: #f1f8e9;
+      --kongwang-color: #5d4037; --kongwang-bg: #efebe9;
+      --ai-color: #0066cc;
+      --ai-bg: #e8f4fd;
+    }
+    body {
+      font-family: "STSong", "SimSun", "宋体", "Noto Serif SC", Georgia, serif;
+      background: var(--bg-primary);
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(139,69,19,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(201,168,76,0.05) 0%, transparent 50%);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.8;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 24px 20px 60px; }
+    .header { text-align: center; margin-bottom: 28px; }
+    .header-title { font-size: 2.2em; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 6px; }
+    .header-subtitle { font-size: 0.9em; color: var(--text-secondary); letter-spacing: 0.08em; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .divider-symbol { color: var(--gold); font-size: 1.1em; }
+    .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+    .section-title { font-size: 1em; color: var(--accent); margin-bottom: 14px; letter-spacing: 0.05em; }
+    .tips-list { list-style: none; font-size: 0.9em; color: var(--text-secondary); }
+    .tips-list li { padding: 4px 0; padding-left: 20px; position: relative; }
+    .tips-list li::before { content: '◆'; position: absolute; left: 0; color: var(--gold); font-size: 0.6em; top: 7px; }
+    .tips-list strong { color: var(--accent); }
+
+    /* Palm */
+    .palm-section { text-align: center; }
+    .palm-diagram { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 12px; }
+    .palm-row { display: flex; gap: 8px; justify-content: center; }
+    .palm-slot { width: 92px; height: 54px; border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-primary); transition: all 0.3s; }
+    .palm-slot.active { transform: scale(1.1); box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+    .palm-slot.daan { border-color: var(--daan-color); background: var(--daan-bg); }
+    .palm-slot.liulian { border-color: var(--liulian-color); background: var(--liulian-bg); }
+    .palm-slot.suxi { border-color: var(--suxi-color); background: var(--suxi-bg); }
+    .palm-slot.chikou { border-color: var(--chikou-color); background: var(--chikou-bg); }
+    .palm-slot.xiaoji { border-color: var(--xiaoji-color); background: var(--xiaoji-bg); }
+    .palm-slot.kongwang { border-color: var(--kongwang-color); background: var(--kongwang-bg); }
+    .palm-slot-icon { font-size: 1.3em; }
+    .palm-slot-label { font-size: 0.95em; color: var(--text-primary); letter-spacing: 0.05em; }
+    .palm-slot-pos { font-size: 0.7em; color: var(--text-secondary); opacity: 0.75; }
+    .palm-arrow { color: var(--gold); font-size: 1.1em; letter-spacing: 0.5em; margin-bottom: 10px; }
+    .palm-legend { font-size: 0.8em; color: var(--text-secondary); line-height: 2; }
+
+    /* Form */
+    .form-label { display: block; font-size: 0.88em; color: var(--text-secondary); margin-bottom: 5px; }
+    .form-label .hint { font-size: 0.85em; opacity: 0.7; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 10px 14px; font-size: 1em; font-family: inherit;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-primary); color: var(--text-primary);
+      outline: none; transition: border-color 0.2s; margin-bottom: 14px;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-input::placeholder, .form-textarea::placeholder { color: #b0a090; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-cast { width: 100%; padding: 13px; font-size: 1.1em; font-family: inherit; letter-spacing: 0.2em; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 4px; }
+    .btn-cast:hover { background: var(--accent-light); }
+    .btn-cast:active { transform: scale(0.98); }
+    .btn-cast:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-ai { background: var(--ai-color); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 0.92em; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+    .btn-ai:hover { background: #0052a3; }
+    .btn-ai:disabled { opacity: 0.5; cursor: not-allowed; }
+    .method-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
+    .method-tab { flex: 1; padding: 8px 12px; text-align: center; font-size: 0.88em; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; border-radius: 6px 6px 0 0; }
+    .method-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-primary); font-weight: bold; }
+    .method-tab:hover:not(.active) { background: var(--bg-primary); }
+    .method-panel { display: none; }
+    .method-panel.active { display: block; }
+
+    /* Date display */
+    .date-display { background: #fffef8; border: 1px dashed var(--gold-light); border-radius: 8px; padding: 10px 16px; margin-bottom: 14px; font-size: 0.88em; color: var(--text-secondary); line-height: 2; }
+    .date-display .lunar-date { color: var(--accent); font-weight: bold; }
+    .date-display .solar-date { color: var(--text-secondary); }
+
+    /* Result */
+    .result-section { display: none; }
+    .result-section.visible { display: block; }
+    .result-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .result-hexagram-icon { font-size: 3.5em; line-height: 1; }
+    .result-title { font-size: 2.2em; color: var(--accent); letter-spacing: 0.15em; line-height: 1.2; }
+    .result-subtitle { font-size: 0.85em; color: var(--text-secondary); margin-top: 4px; }
+    .result-divider { border: none; border-top: 1px dashed var(--border); margin: 14px 0; }
+    .result-block { margin-bottom: 14px; }
+    .result-block:last-child { margin-bottom: 0; }
+    .result-block-title { font-size: 0.8em; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 4px; }
+    .result-block-content { font-size: 0.93em; color: var(--text-primary); line-height: 1.9; }
+    .verse-box { background: linear-gradient(135deg, #fff8f0, #fef9f3); border: 1px solid var(--gold-light); border-left: 3px solid var(--gold); border-radius: 6px; padding: 12px 16px; font-size: 0.88em; line-height: 2; font-style: italic; }
+    .verse-box .verse-title { font-size: 0.8em; color: var(--gold); margin-bottom: 4px; font-style: normal; }
+    .verse-box .verse-text { letter-spacing: 0.05em; }
+
+    /* Three hexagrams */
+    .three-hexagrams { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
+    .three-hexagrams-item { text-align: center; flex: 1; padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border); }
+    .three-hexagrams-item .th-icon { font-size: 2em; }
+    .three-hexagrams-item .th-name { font-size: 1em; letter-spacing: 0.1em; }
+    .three-hexagrams-item .th-role { font-size: 0.78em; color: var(--text-secondary); }
+
+    /* AI explanation */
+    .ai-section { margin-top: 14px; }
+    .ai-box { background: var(--ai-bg); border: 1px solid #b3d4f5; border-radius: 8px; padding: 14px 18px; font-size: 0.9em; line-height: 2; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; }
+    .ai-box.error { background: #fff0f0; border-color: #e8aaaa; color: #8b0000; }
+    .ai-box.loading { color: var(--text-secondary); font-style: italic; }
+    .ai-actions { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+
+    /* Calc steps */
+    .calc-steps { background: #fffef8; border: 1px dashed var(--gold-light); border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; font-size: 0.88em; color: var(--text-secondary); line-height: 2.2; }
+    .calc-steps strong { color: var(--accent); }
+    .calc-steps .highlight { color: var(--gold); font-weight: bold; }
+
+    /* Settings */
+    .settings-toggle { font-size: 0.85em; color: var(--text-secondary); cursor: pointer; text-decoration: underline; margin-bottom: 10px; display: inline-block; }
+    .settings-toggle:hover { color: var(--accent); }
+    .settings-panel { display: none; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .settings-panel.visible { display: block; }
+    .settings-row { margin-bottom: 12px; }
+    .settings-row:last-child { margin-bottom: 0; }
+    .settings-hint { font-size: 0.8em; color: var(--text-secondary); margin-top: 4px; }
+
+    /* Hexagram grid */
+    .hexagrams-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .hexagram-card { text-align: center; padding: 12px 6px; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border); }
+    .hexagram-card-icon { font-size: 1.8em; margin-bottom: 2px; }
+    .hexagram-card-name { font-size: 1em; color: var(--accent); letter-spacing: 0.1em; }
+    .hexagram-card-info { font-size: 0.76em; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; color: var(--text-secondary); display: none; }
+    .loading.visible { display: block; }
+    .loading-spinner { font-size: 2em; animation: spin 1.2s linear infinite; display: block; margin-bottom: 10px; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @media (max-width: 520px) {
+      .header-title { font-size: 1.8em; }
+      .form-row { grid-template-columns: 1fr 1fr; }
+      .form-row-2 { grid-template-columns: 1fr; }
+      .hexagrams-grid { grid-template-columns: repeat(2, 1fr); }
+      .palm-slot { width: 74px; height: 48px; }
+      .palm-slot-icon { font-size: 1.1em; }
+      .palm-slot-label { font-size: 0.85em; }
+      .three-hexagrams { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1 class="header-title">小六壬起卦器</h1>
+    <p class="header-subtitle">阳历自动转农历 · AI通俗解读</p>
+  </div>
+  <div class="divider"><span class="divider-symbol">☯</span></div>
+
+  <!-- Tips -->
+  <div class="section">
+    <div class="section-title">✦ 使用说明</div>
+    <ul class="tips-list">
+      <li><strong>阳历自动转农历</strong> — 无需手动查找农历，填入阳历日期后程序自动推算</li>
+      <li><strong>月日时起课</strong> —填阳历月/日，自动换算农历并掐算三步得卦</li>
+      <li><strong>三数起课（变通取数）</strong> — 随意报/想3个数字，分别代表<strong>起因（初宫）→ 过程 → 结果（末宫）</strong></li>
+      <li><strong>单数起课</strong> — 心中随意想一个数，快速得一卦参考</li>
+      <li><strong>AI通俗解读</strong> — 在设置中填入 API Key，点击按钮让 AI 帮你用通俗语言解读卦象</li>
+     <li><strong>地理方位</strong> 与<strong>事项类别</strong> 辅助解读，增强针对性</li>
+    </ul>
+  </div>
+
+  <!-- Palm diagram -->
+  <div class="section palm-section">
+    <div class="section-title">✦ 掌诀定位图（顺时针固定循环）</div>
+    <div class="palm-diagram">
+      <div class="palm-row">
+        <div class="palm-slot liulian" id="slot-liulian">
+          <span class="palm-slot-icon">🌧️</span>
+          <span class="palm-slot-label">留连</span>
+          <span class="palm-slot-pos">食指指尖</span>
+        </div>
+      </div>
+      <div class="palm-row">
+        <div class="palm-slot suxi" id="slot-suxi">
+          <span class="palm-slot-icon">☀️</span>
+          <span class="palm-slot-label">速喜</span>
+          <span class="palm-slot-pos">中指指尖</span>
+        </div>
+        <div class="palm-slot kongwang" id="slot-kongwang">
+          <span class="palm-slot-icon">💨</span>
+          <span class="palm-slot-label">空亡</span>
+          <span class="palm-slot-pos">中指根部</span>
+        </div>
+      </div>
+      <div class="palm-row">
+        <div class="palm-slot chikou" id="slot-chikou">
+          <span class="palm-slot-icon">🗡️</span>
+          <span class="palm-slot-label">赤口</span>
+          <span class="palm-slot-pos">无名指指尖</span>
+        </div>
+        <div class="palm-slot xiaoji" id="slot-xiaoji">
+          <span class="palm-slot-icon">🍀</span>
+          <span class="palm-slot-label">小吉</span>
+          <span class="palm-slot-pos">无名指根部</span>
+        </div>
+        <div class="palm-slot daan" id="slot-daan">
+          <span class="palm-slot-icon">🌿</span>
+          <span class="palm-slot-label">大安</span>
+          <span class="palm-slot-pos">食指根部</span>
+        </div>
+      </div>
+    </div>
+    <div class="palm-arrow">↻ 顺时针掐算，永不改变</div>
+    <div class="palm-legend">
+      掐算顺序：<strong>大安（食指根）→ 留连（食指尖）→ 速喜（中指尖）→ 赤口（无名指尖）→ 小吉（无名根）→ 空亡（中指根）→ 再回大安</strong>，六神顺序永远固定不变，顺时针循环。
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section">
+    <div class="section-title">✦ 设置</div>
+    <div class="settings-toggle" onclick="toggleSettings()">⚙️ AI接口设置（点击展开）</div>
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-row">
+        <label class="form-label">API Provider<span class="hint">（支持的模型服务商）</span></label>
+        <select class="form-select" id="apiProvider" onchange="onProviderChange()">
+          <option value="openai">OpenAI（GPT-4o / GPT-4o mini / GPT-4）</option>
+          <option value="anthropic">Anthropic（Claude 3.5 Sonnet / Claude 3 Opus）</option>
+          <option value="deepseek">DeepSeek（DeepSeek Chat）</option>
+          <option value="custom">Custom（自定义接口）</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label class="form-label">API Key <span class="hint">（必填，你的密钥）</span></label>
+        <input type="password" id="apiKey" class="form-input" placeholder="sk-..." oninput="saveSettings()">
+      </div>
+      <div class="settings-row" id="customEndpointRow" style="display:none;">
+        <label class="form-label">API Endpoint <span class="hint">（自定义接口地址）</span></label>
+        <input type="text" id="apiEndpoint" class="form-input" placeholder="https://api.example.com/v1/chat/completions" oninput="saveSettings()">
+      </div>
+      <div class="settings-row">
+        <label class="form-label">Model<span class="hint">（模型名称）</span></label>
+        <input type="text" id="apiModel" class="form-input" placeholder="gpt-4o-mini" value="gpt-4o-mini" oninput="saveSettings()">
+        <div class="settings-hint" id="modelHint">OpenAI 推荐：gpt-4o-mini（便宜快速）</div>
+      </div>
+      <div style="font-size:0.8em;color:var(--text-secondary);margin-top:8px;">
+        💡 API Key 仅存储在浏览器本地，不会发送到任何第三方服务器，请放心使用。
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Form -->
+  <div class="section">
+    <div class="section-title">✦ 输入参数</div>
+
+    <!-- Method tabs -->
+    <div class="method-tabs">
+      <div class="method-tab active" onclick="switchMethod('datetime')">月日时起课</div>
+      <div class="method-tab" onclick="switchMethod('threenum')">三数起课</div>
+      <div class="method-tab" onclick="switchMethod('singlenum')">单数起课</div>
+      <div class="method-tab" onclick="switchMethod('random')">随机取数</div>
+    </div>
+
+    <!-- Panel1: 月日时 -->
+    <div class="method-panel active" id="panel-datetime">
+      <div style="margin-bottom:8px;font-size:0.85em;color:var(--text-secondary);">填入阳历日期，自动转换为农历后起卦</div>
+      <div class="date-display" id="dateDisplay">
+        正在获取日期信息...
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">阳历月份<span class="hint">（1~12）</span></label>
+          <input type="number" id="solarMonthInput" class="form-input" placeholder="例：6" min="1" max="12" onchange="updateDateDisplay()">
+        </div>
+        <div>
+          <label class="form-label">阳历日期 <span class="hint">（1~31）</span></label>
+          <input type="number" id="solarDayInput" class="form-input" placeholder="例：15" min="1" max="31" onchange="updateDateDisplay()">
+        </div>
+        <div>
+          <label class="form-label">时辰 <span class="hint">（已自动填入）</span></label>
+          <select class="form-select" id="hourSelect">
+            <option value="0">子时 23~01点</option>
+            <option value="1">丑时 01~03点</option>
+            <option value="2">寅时 03~05点</option>
+            <option value="3">卯时 05~07点</option>
+            <option value="4">辰时 07~09点</option>
+            <option value="5">巳时 09~11点</option>
+            <option value="6">午时 11~13点</option>
+            <option value="7">未时 13~15点</option>
+            <option value="8">申时 15~17点</option>
+            <option value="9">酉时 17~19点</option>
+            <option value="10">戌时 19~21点</option>
+            <option value="11">亥时 21~23点</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: 三数起课 -->
+    <div class="method-panel" id="panel-threenum">
+      <div style="margin-bottom:8px;font-size:0.85em;color:var(--text-secondary);">随意报或想3个数字，第1个数→起因，第2个数→过程，第3个数→结果</div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">第一个数 <span class="hint">（初宫·起因）</span></label>
+          <input type="number" id="num1" class="form-input" placeholder="例：4">
+        </div>
+        <div>
+          <label class="form-label">第二个数 <span class="hint">（中宫·过程）</span></label>
+          <input type="number" id="num2" class="form-input" placeholder="例：7">
+        </div>
+        <div>
+          <label class="form-label">第三个数 <span class="hint">（末宫·结果）</span></label>
+          <input type="number" id="num3" class="form-input" placeholder="例：2">
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: 单数起课 -->
+    <div class="method-panel" id="panel-singlenum">
+      <div style="margin-bottom:8px;font-size:0.85em;color:var(--text-secondary);">心中随意想一个数，快速得一卦参考</div>
+      <div>
+        <label class="form-label">心中所感之数 <span class="hint">（任意数字）</span></label>
+        <input type="text" id="singleNum" class="form-input" placeholder="例如：1436 或 28 或 13812345678">
+      </div>
+    </div>
+
+    <!-- Panel 4: 随机取数 -->
+    <div class="method-panel" id="panel-random">
+      <div style="margin-bottom:8px;font-size:0.85em;color:var(--text-secondary);">凭直觉第一感输入任何可转化为数字的信息，万物皆可成卦</div>
+      <div>
+        <label class="form-label">随机取数 <span class="hint">（车牌、时间、汉字笔画……）</span></label>
+        <input type="text" id="randomNum" class="form-input" placeholder="例如：看到车牌京A12345，取12345">
+      </div>
+      <div style="font-size:0.82em;color:var(--text-secondary);margin-top:4px;">
+        取数要点：① 不要反复犹豫才选数字，要第一直觉；② 超过10的数字相加到个位（如28→2+8=10→1+0=1）；③ 汉字取笔画数
+      </div>
+    </div>
+
+    <!-- Common fields -->
+    <div class="form-row-2" style="margin-top:4px;">
+      <div>
+        <label class="form-label">地理方位 <span class="hint">（如：家宅正中）</span></label>
+        <input type="text" id="direction" class="form-input" placeholder="选填">
+      </div>
+      <div>
+        <label class="form-label">事项类别</label>
+        <input type="text" id="category" class="form-input" placeholder="出行/姻缘/求财/健康…">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">补充说明 <span class="hint">（选填，写下具体想问的事）</span></label>
+      <input type="text" id="detail" class="form-input" placeholder="选填，例如：明天的面试能不能通过">
+    </div>
+
+    <button class="btn-cast" id="castBtn" onclick="performDivination()">起 卦</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <span class="loading-spinner">☸</span><div>起卦中...</div>
+  </div>
+
+  <!-- Calculation steps -->
+  <div class="calc-steps" id="calcSteps"></div>
+
+  <!-- Result -->
+  <div class="result-section" id="resultSection">
+    <!-- Three-number result -->
+    <div class="section" id="threeResultSection" style="display:none;margin-bottom:20px;">
+      <div class="section-title">✦ 三宫卦象</div>
+      <div class="three-hexagrams" id="threeHexagrams"></div>
+    </div>
+
+    <!-- Main result -->
+    <div class="section">
+      <div class="result-header">
+        <div class="result-hexagram-icon" id="resultIcon"></div>
+        <div class="result-title-group">
+          <div class="result-title" id="resultTitle"></div>
+          <div class="result-subtitle" id="resultSubtitle"></div>
+        </div>
+      </div>
+      <hr class="result-divider">
+
+      <div class="result-block">
+        <div class="result-block-title">五行 · 方位 · 意象</div>
+        <div class="result-block-content" id="resultWuxing"></div>
+      </div>
+
+      <div class="result-block">
+        <div class="result-block-title">传统口诀</div>
+        <div class="verse-box" id="resultVerse"></div>
+      </div>
+
+      <div class="result-block">
+        <div class="result-block-title">综合解读</div>
+        <div class="result-block-content" id="resultInterpretation"></div>
+      </div>
+
+      <!-- AI Section -->
+      <div class="ai-section" id="aiSection" style="display:none;">
+        <div class="ai-actions">
+          <div class="result-block-title" style="margin-bottom:0;line-height:2;">AI通俗解读</div>
+          <button class="btn-ai" id="aiBtn" onclick="callAI()">🤖 让AI解读</button>
+        </div>
+        <div class="ai-box" id="aiBox" style="display:none;"></div>
+      </div>
+
+      <div class="result-block">
+        <div class="result-block-title">起卦参数</div>
+        <div class="result-block-content" id="resultParams"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Six hexagrams grid -->
+  <div class="section">
+    <div class="section-title">✦ 六卦总览</div>
+    <div class="hexagrams-grid">
+      <div class="hexagram-card"><div class="hexagram-card-icon">🌿</div><div class="hexagram-card-name">大安</div><div class="hexagram-card-info">木·青·东方<br>谋事主一、五、七<br>静止安稳·青龙</div></div>
+      <div class="hexagram-card"><div class="hexagram-card-icon">🌧️</div><div class="hexagram-card-name">留连</div><div class="hexagram-card-info">水·黑·北方<br>谋事主二、八、十<br>拖延纠缠·玄武</div></div>
+      <div class="hexagram-card"><div class="hexagram-card-icon">☀️</div><div class="hexagram-card-name">速喜</div><div class="hexagram-card-info">火·赤·南方<br>谋事主三、六、九<br>快速喜庆·朱雀</div></div>
+      <div class="hexagram-card"><div class="hexagram-card-icon">🗡️</div><div class="hexagram-card-name">赤口</div><div class="hexagram-card-info">金·白·西方<br>谋事主四、七、十<br>口舌官讼·白虎</div></div>
+      <div class="hexagram-card"><div class="hexagram-card-icon">🍀</div><div class="hexagram-card-name">小吉</div><div class="hexagram-card-info">木·青·六合<br>谋事主一、五、七<br>和合小吉·六合</div></div>
+      <div class="hexagram-card"><div class="hexagram-card-icon">💨</div><div class="hexagram-card-name">空亡</div><div class="hexagram-card-info">土·黄·中央<br>谋事主三、六、九<br>落空忧虑·勾陈</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+//阳历→农历转换
+// =====================================================
+const LUNAR_INFO = [
+  0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
+  0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
+  0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
+  0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
+  0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
+  0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5b0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
+  0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
+  0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540, 0x0b6a6, 0x095a6,
+  0x095d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252, 0x0d520, 0x0dd45, 0x0b5a0, 0x056d0,
+  0x055b2, 0x04ae0, 0x0a5a6, 0x0a570, 0x05254, 0x0a930, 0x07495, 0x06aa0, 0x0ad50, 0x05b52,
+  0x04b60, 0x0a735, 0x04ae0, 0x0a570, 0x04e60, 0x0a4d0, 0x0d260, 0x0eb60, 0x0ada2, 0x0aa90,
+  0x05b52, 0x05b20, 0x0a950, 0x0b257, 0x06ca0, 0x0b550, 0x055c8, 0x0ab50, 0x09660, 0x04c75,
+  0x0a570, 0x04e50, 0x0a4d0, 0x0d260, 0x0e8e2, 0x0d6a0, 0x0d6a0, 0x0ada4, 0x095b0, 0x049b0,
+  0x0a4bb, 0x0a4b0, 0x0aa50, 0x0b255, 0x06d20, 0x0ada0, 0x07b95, 0x06aa0, 0x06ad0, 0x055b0,
+  0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252, 0x0d250, 0x0dd20, 0x0d950, 0x0b557, 0x056a0,
+  0x0a5b4, 0x025d0, 0x092d0, 0x0cab5, 0x0a950, 0x0b557, 0x06ca0, 0x0b550, 0x055c0, 0x04ba0,
+  0x0a5b0, 0x04573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0, 0x0aea6, 0x0ab50, 0x04b60, 0x0aae4,
+  0x0a2d0, 0x0d260, 0x0eb60, 0x0ada2, 0x0aa90, 0x05b52, 0x05b20, 0x0a950, 0x0b257, 0x06ca0,
+  0x0b550, 0x055c8, 0x0ab50, 0x09660, 0x04c75, 0x0a570, 0x04e50, 0x0a4d0, 0x0d260, 0x0e8e2,
+  0x0d6a0, 0x0d6a0, 0x0ada4, 0x095b0, 0x049b0, 0x0a4bb, 0x0a4b0, 0x0aa50, 0x0b255, 0x06d20,
+  0x0ada0, 0x07b95, 0x06aa0, 0x06ad0, 0x055b0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252
+];
+
+const TIAN_GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DI_ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const LUNAR_MONTH_NAMES = ['', '正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const SHICHEN_NAMES = ['子时','丑时','寅时','卯时','辰时','巳时','午时','未时','申时','酉时','戌时','亥时'];
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
+function daysOfMonth(year, month) {
+  const days = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return days[month - 1];
+}
+
+function lunarYearDays(year) {
+  let sum = 348;
+  let info = LUNAR_INFO[year - 1900];
+  for (let i = 0x8000; i > 0x8; i >>= 1) {
+    if (info & i) sum++;
+  }
+  return sum + leapMonthCount(year);
+}
+
+function leapMonth(year) {
+  return LUNAR_INFO[year - 1900] & 0xf;
+}
+
+function leapMonthCount(year) {
+  const lm = leapMonth(year);
+  return lm ? (LUNAR_INFO[year - 1900] & (0x10000 >> lm) ? 30 : 29) : 0;
+}
+
+function lunarMonthDays(year, month) {
+  const info = LUNAR_INFO[year - 1900];
+  return (info & (0x10000 >> month)) ? 30 : 29;
+}
+
+function solarToLunar(solarYear, solarMonth, solarDay) {
+  // 用查表法阳历转农历（基于1900-01-31为农历1900正月初一）
+  let offset = 0;
+  for (let y = 1900; y < solarYear; y++) {
+    offset += isLeapYear(y) ? 366 : 365;
+  }
+  for (let m = 1; m < solarMonth; m++) {
+    offset += daysOfMonth(solarYear, m);
+  }
+  offset += solarDay - 1;
+
+  // 1900-01-31 = lunar1900-01-01
+  offset -= 30; // 减去基准偏移
+
+  let lunarYear = 1900;
+  let lunarMonth = 1;
+  let lunarDay = 1;
+
+  while (offset > 0) {
+    const yearDays = lunarYearDays(lunarYear);
+    if (offset < yearDays) break;
+    offset -= yearDays;
+    lunarYear++;
+  }
+
+  const lm = leapMonth(lunarYear);
+  let isLeapMonth = false;
+  let monthDays;
+  while (offset > 0) {
+    if (isLeapMonth) {
+      monthDays = lunarMonthDays(lunarYear, lunarMonth);
+    } else {
+      monthDays = lunarMonthDays(lunarYear, lunarMonth);
+    }
+    if (offset < monthDays) break;
+    offset -= monthDays;
+    if (!isLeapMonth && lunarMonth === lm) {
+      isLeapMonth = true;
+    } else {
+      isLeapMonth = false;
+      lunarMonth++;
+      if (lm > 0 && lunarMonth > lm + 1) break;
+    }
+  }
+  lunarDay = offset + 1;
+  return { lunarYear, lunarMonth, lunarDay, isLeapMonth };
+}
+
+function getGanZhi(solarYear, solarMonth, solarDay) {
+  //简化版干支计算（以1984-01-01为甲子日基准）
+  const baseDate = new Date(1984, 0, 1);
+  const targetDate = new Date(solarYear, solarMonth - 1, solarDay);
+  const diffDays = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24));
+  const ganIdx = ((diffDays % 60) + 60) % 60;
+  const zhiIdx = ((diffDays % 12) + 12) % 12;
+  return TIAN_GAN[ganIdx] + DI_ZHI[zhiIdx];
+}
+
+function formatLunarDate(ld) {
+  const leapStr = ld.isLeapMonth ? '（闰）' : '';
+  return `农历${ld.lunarYear}年${LUNAR_MONTH_NAMES[ld.lunarMonth]}${leapStr}月${ld.lunarDay}日`;
+}
+
+// =====================================================
+// 六神数据
+// =====================================================
+const SIX_GODS = ['daan', 'liulian', 'suxi', 'chikou', 'xiaoji', 'kongwang'];
+
+const HEXAGRAMS = {
+  daan: {
+    name: '大安', icon: '🌿', wuxing: '木', color: '青色', direction: '东方', position: '青龙',
+    nature: '身不动时', numbers: '一、五、七',
+    description: '大安为六壬之首，主平安无事、万事吉祥。卦象属木，青龙司事，代表祥和、稳定与顺遂。',
+    verse: '大安事事昌，求谋在东方。失物去不远，宅舍保安康。行人身未动，病者主无妨。将军回田野，仔细好推详。',
+    interpretation: {
+      general: '大安卦象主安定平和，所求之事不论吉凶，目前阶段均为安稳之象。若谋望则宜守成不宜妄动；若问病则安泰；若问行人则未动已归。',
+      favorable: '宜静不宜动，守成为上。可蓄势待时，不可急于求成。谋事关注一、五、七相关的人和事。',
+      unfavorable: '过于保守可能错失良机，亦需防过于安乐而生的懈怠之心。',
+      advice: '保持现状，稳步前行；勿轻举妄动，静待时机。若问出行则缓行，问健康则安养。'
+    }
+  },
+  liulian: {
+    name: '留连', icon: '🌧️', wuxing: '水', color: '黑色', direction: '北方', position: '玄武',
+    nature: '人未归时', numbers: '二、八、十',
+    description: '留连主迟滞、牵连、徘徊不进。卦象属水，玄武司事，象征阻碍、反复与等待。',
+    verse: '留连事难成，求谋日未明。官事只宜缓，去者来回程。失物南方去，急寻方心明。更须防口舌，人事且平平。',
+    interpretation: {
+      general: '留连卦象主事情进展缓慢，常有牵连缠绕之象。若谋望则迟缓；若问行人则在外未回；若问疾病则缠绵难愈。',
+      favorable: '宜耐心等待，不宜强行推进。可借此时机充分准备。谋事关注二、八、十相关的人和事。',
+      unfavorable: '过度拖延易生变故，需防对方反悔或局势变化。',
+      advice: '耐心守候，蓄势待机；主动疏通人脉，破除阻碍。切忌急躁冒进，防口舌是非。'
+    }
+  },
+  suxi: {
+    name: '速喜', icon: '☀️', wuxing: '火', color: '赤色', direction: '南方', position: '朱雀',
+    nature: '人即至时', numbers: '三、六、九',
+    description: '速喜主喜庆、迅速、消息即至。卦象属火，朱雀司事，象征喜庆、消息与行动力。',
+    verse: '速喜喜来临，求财向南行。失物申未午，逢人要打听。官事有福德，病者无须恐。田宅六畜吉，行人音信明。',
+    interpretation: {
+      general: '速喜卦象主喜庆临门，消息速至，所求之事有即成之兆。若谋望则有喜讯传来；若问行人则已在路上；若问疾病则有转机。',
+      favorable: '宜主动出击，把握当下良机。行动越快，成事越速。谋事关注三、六、九相关的人和事。',
+      unfavorable: '过快决策易有疏漏，需防过于乐观而低估风险。',
+      advice: '当机立断，乘势而上；保持警觉，不可疏忽大意。若问财则速往南方，若问行人则音信即至。'
+    }
+  },
+  chikou: {
+    name: '赤口', icon: '🗡️', wuxing: '金', color: '白色', direction: '西方', position: '白虎',
+    nature: '官事凶时', numbers: '四、七、十',
+    description: '赤口主口舌、争执、官讼。卦象属金，白虎司事，象征是非、冲突与意外。',
+    verse: '赤口主口舌，官非切要防。失物急去寻，行人有惊慌。鸡犬多作怪，病者出西方。更须防咒咀，恐怕染瘟殃。',
+    interpretation: {
+      general: '赤口卦象主口舌官讼之事，需防小人是非与争执冲突。若谋望则多口舌竞争；若问行人则多纠纷；若问疾病则需防意外。',
+      favorable: '宜谨言慎行，低调行事；避免正面冲突。谋事关注四、七、十相关的人和事。',
+      unfavorable: '言多必失，易惹祸端；若强争则两败俱伤。',
+      advice: '沉默是金，忍让为先；如需交涉，当以理服人，勿激化矛盾。问事防官非，问出行者需谨慎。'
+    }
+  },
+  xiaoji: {
+    name: '小吉', icon: '🍀', wuxing: '木', color: '青色', direction: '六合', position: '六合',
+    nature: '人来喜时', numbers: '一、五、七',
+    description: '小吉主小事吉利、人缘和合。卦象属木，六合司事，象征合作、人缘与小的顺遂，为六壬中最吉祥之卦。',
+    verse: '小吉最吉昌，路上好商量。阴人来报喜，失物在坤方。行人立便至，交易甚是强。凡事皆和合，病者祈上苍。',
+    interpretation: {
+      general: '小吉卦象为六壬最吉之兆，主小事吉利，人缘和合，所求之事有小的转机与顺遂。若谋望则有小成；若问行人则有人相引而归；若问合作则可成。',
+      favorable: '宜从小处着手，稳扎稳打；借助人脉关系，合作共赢。谋事关注一、五、七相关的人和事。',
+      unfavorable: '不可贪大求全，期望值过高易失望；小事虽吉，大事仍需谨慎。',
+      advice: '从小做起，积累小胜为大胜；广结善缘，借助他人之力成事。出行顺利，感情有助。'
+    }
+  },
+  kongwang: {
+    name: '空亡', icon: '💨', wuxing: '土', color: '黄色', direction: '中央', position: '勾陈',
+    nature: '音信稀时', numbers: '三、六、九',
+    description: '空亡主落空、徒劳、一切成空。卦象属土，勾陈司事，象征失落、努力付诸东流，为六壬最凶之兆。',
+    verse: '空亡事不祥，阴人多乖张。求财无利益，行人有灾殃。失物寻不见，官事有刑伤。病人逢暗鬼，析解可安康。',
+    interpretation: {
+      general: '空亡卦象为六壬最凶之兆，主努力落空、所求无果。若谋望则徒劳无功；若问行人则杳无音讯；若问疾病则需特别留意；若问合伙则防破财。',
+      favorable: '宜按兵不动，不宜有任何投入或承诺；已有之事需防变故。谋事关注三、六、九相关的人和事。',
+      unfavorable: '强行推进必遭失败；若已投入需及时止损，抽身退出。',
+      advice: '立即止损，不要抱有不切实际的幻想；重新调整计划，待运势转好再行谋划。'
+    }
+  }
+};
+
+const DIRECTION_MAP = {
+  '东': 'daan', '东边': 'daan', '东方': 'daan', '东面': 'daan',
+  '东南': 'suxi', '东南方向': 'suxi',
+  '南': 'suxi', '南边': 'suxi', '南方': 'suxi', '南面': 'suxi',
+  '西南': 'chikou', '西南方': 'chikou',
+  '西': 'chikou', '西边': 'chikou', '西方': 'chikou', '西面': 'chikou',
+  '西北': 'liulian', '西北方': 'liulian',
+  '北': 'liulian', '北边': 'liulian', '北方': 'liulian', '北面': 'liulian',
+  '东北': 'xiaoji', '东北方': 'xiaoji',
+  '正中': 'daan', '中央': 'kongwang', '中': 'kongwang',
+  '家宅正中': 'daan', '办公室西北': 'liulian', '家宅东北角': 'xiaoji'
+};
+
+// =====================================================
+// 核心算法
+// =====================================================
+function liurenStep(start, steps) {
+  return (start + steps) % 6;
+}
+
+function liurenMonthDayHour(lunarMonth, lunarDay, hour) {
+  const monthIdx = liurenStep(0, lunarMonth);
+  const dayIdx = liurenStep(monthIdx, lunarDay);
+  const hourIdx = liurenStep(dayIdx, hour + 1);
+  return {
+    monthHexagram: SIX_GODS[monthIdx],
+    dayHexagram: SIX_GODS[dayIdx],
+    finalHexagram: SIX_GODS[hourIdx],
+    calcText: `月份：从大安起数${lunarMonth}月 → <span class="highlight">${HEXAGRAMS[SIX_GODS[monthIdx]].name}</span>；` +
+              `日辰：从上宫起初一数${lunarDay}日 → <span class="highlight">${HEXAGRAMS[SIX_GODS[dayIdx]].name}</span>；` +
+              `时辰：从上宫起${SHICHEN_NAMES[hour]}数 → <span class="highlight">${HEXAGRAMS[SIX_GODS[hourIdx]].name}</span>`
+  };
+}
+
+function liurenThreeNumbers(n1, n2, n3) {
+  const step1 = liurenStep(0, n1);
+  const step2 = liurenStep(step1, n2);
+  const step3 = liurenStep(step2, n3);
+  return {
+    chugong: SIX_GODS[step1],
+    zhonggong: SIX_GODS[step2],
+    mogong: SIX_GODS[step3],
+    finalHexagram: SIX_GODS[step3],
+    calcText: `第一步：从大安起数<span class="highlight">${n1}</span> → 初宫<span class="highlight">${HEXAGRAMS[SIX_GODS[step1]].name}</span>（事情起因）；` +
+              `第二步：从上宫起数<span class="highlight">${n2}</span> → 中宫<span class="highlight">${HEXAGRAMS[SIX_GODS[step2]].name}</span>（事情过程）；` +
+              `第三步：从上宫起数<span class="highlight">${n3}</span> → 末宫<span class="highlight">${HEXAGRAMS[SIX_GODS[step3]].name}</span>（事情结果）`
+  };
+}
+
+function liurenSingleNumber(numStr) {
+  const digits = numStr.replace(/\D/g, '');
+  if (!digits) return null;
+  const sum = digits.split('').reduce((acc, d) => acc + parseInt(d, 10), 0);
+  const digitCount = digits.length;
+  let subtract = digitCount >= 4 ? 3 : digitCount === 3 ? 2 : digitCount === 2 ? 1 : 0;
+  const result = sum - subtract;
+  let remainder = result % 6;
+  if (remainder === 0) remainder = 6;
+  return {
+    digitString: digits, digitSum: sum, digitCount, subtract, result, remainder,
+    finalHexagram: SIX_GODS[remainder - 1],
+    calcText: `数字"${numStr}"（${digitCount}位）→ 各位和=${sum} → ${sum}-${subtract}=${result} → ${result}÷6余${remainder} → <span class="highlight">${HEXAGRAMS[SIX_GODS[remainder-1]].name}</span>`
+  };
+}
+
+function liurenRandom(numStr) {
+  const allDigits = numStr.replace(/\D/g, '');
+  if (!allDigits) return liurenSingleNumber(String(numStr.length));
+  return liurenSingleNumber(allDigits);
+}
+
+function getCategoryAdvice(category) {
+  if (!category) return '';
+  const cat = category.toLowerCase();
+  const advices = {
+    '出行': '出行事宜需视卦象吉凶：逢大安、速喜、小吉可安心出行；逢留连宜改期缓行；逢赤口需防口舌纠纷；逢空亡忌出行。',
+    '姻缘': '姻缘之事以大安、小吉为吉，速喜主喜讯速至，留连则需耐心等待，赤口与空亡不宜强求。',
+    '事业': '事业谋望大安为稳、速喜为快、小吉为有小成，留连迟缓、赤口防小人、空亡徒劳。',
+    '求财': '求财事宜小吉为有小财，大安为守财，速喜财来迅速，留连财路受阻，赤口防破财，空亡财落空。',
+    '健康': '健康方面大安为安、小吉为渐愈、速喜为转机，留连缠绵，赤口防意外，空亡需特别留意。',
+    '考试': '考试问卜小吉为有望，速喜为传佳音，留连需再接再厉，赤口防紧张失误，空亡不宜参加。',
+    '搬家': '搬家乔迁大安、小吉为吉，留连拖延，赤口防口舌，空亡不宜此时动土。',
+    '寻物': '寻物事宜大安为在原处，小吉、速喜可寻得，留连难寻，赤口有争端，空亡难觅。',
+    '诉讼': '诉讼事宜赤口防败诉，空亡可和解，留连拖延，大安小吉需看具体情况。',
+    '人际': '人际交往小吉、大安为吉，速喜主新朋友出现，留连有人情纠葛，赤口防冲突，空亡人走茶凉。',
+    '婚嫁': '婚嫁之事大安、小吉为吉，留连有拖延，赤口防口舌生变，空亡婚事难成。',
+    '开业': '开业事宜小吉为佳，大安为稳，速喜为喜讯，空亡不宜开业。'
+  };
+  for (const [key, advice] of Object.entries(advices)) {
+    if (cat.includes(key)) return advice;
+  }
+  return '';
+}
+
+// =====================================================
+// AI 解读
+// =====================================================
+let currentHexagramData = null;
+
+async function callAI() {
+  const btn = document.getElementById('aiBtn');
+  const box = document.getElementById('aiBox');
+  const data = currentHexagramData;
+  if (!data) return;
+
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) {
+    alert('请先在设置中填写 API Key');
+    toggleSettings();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '🔄 AI解读中...';
+  box.style.display = 'block';
+  box.className = 'ai-box loading';
+  box.textContent = '正在调用 AI，请稍候...';
+
+  const provider = document.getElementById('apiProvider').value;
+  const model = document.getElementById('apiModel').value.trim() || 'gpt-4o-mini';
+  const category = document.getElementById('category').value.trim();
+  const detail = document.getElementById('detail').value.trim();
+
+  const hexagram = HEXAGRAMS[data.finalHexagram];
+  const shichenIdx = data.shichenIdx || 0;
+
+  const systemPrompt = `你是一位精通中国传统文化小六壬的专业老师。请用通俗易懂、亲切自然的口吻，为用户解读卦象。不要使用过于玄奥的术语，而是用贴近生活的比喻和例子来解释。解读要包含：
+1. 一句话总结当前运势状态
+2. 这个卦象在生活各方面的具体含义（感情/事业/财运/健康）
+3. 针对用户提问的建议
+4. 一个生活中的小场景比喻，帮助用户更好理解
+
+请用简体中文回答，回复长度适中（200-300字），语气温暖但专业。`;
+
+  const userPrompt = `我刚刚起了一卦，卦象是【${hexagram.name}】。
+- 五行：${hexagram.wuxing}（${hexagram.color}）
+- 方位：${hexagram.direction}
+- 司事神将：${hexagram.position}
+- 意象：${hexagram.nature}
+- 传统口诀：${hexagram.verse}
+- 传统解读：${hexagram.interpretation.general}
+- 宜：${hexagram.interpretation.favorable}
+- 忌：${hexagram.interpretation.unfavorable}
+${category ? `- 事项类别：${category}` : ''}
+${detail ? `- 用户提问：${detail}` : ''}
+${data.lunarDateStr ? `- 农历时间：${data.lunarDateStr}` : ''}
+
+请用通俗易懂的语言为我解读这个卦象。`;
+
+  try {
+    let endpoint, headers, body;
+
+    if (provider === 'openai') {
+      endpoint = 'https://api.openai.com/v1/chat/completions';
+      headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+      body = { model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+    } else if (provider === 'anthropic') {
+      endpoint = 'https://api.anthropic.com/v1/messages';
+      headers = { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
+      body = { model: model.startsWith('claude') ? model : 'claude-3-5-sonnet-20241014', max_tokens: 1024, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] };
+    } else if (provider === 'deepseek') {
+      endpoint = 'https://api.deepseek.com/v1/chat/completions';
+      headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+      body = { model: model.startsWith('deepseek') ? model : 'deepseek-chat', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+    } else {
+      const customEndpoint = document.getElementById('apiEndpoint').value.trim();
+      if (!customEndpoint) throw new Error('请填写自定义 API 接口地址');
+      endpoint = customEndpoint;
+      headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+      body = { model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+    }
+
+    const res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`API请求失败 (${res.status})：${errText.substring(0, 200)}`);
+    }
+
+    const resData = await res.json();
+    let reply;
+    if (provider === 'anthropic') {
+      reply = resData.content[0].text;
+    } else {
+      reply = resData.choices[0].message.content;
+    }
+
+    box.className = 'ai-box';
+    box.textContent = reply;
+
+  } catch (err) {
+    box.className = 'ai-box error';
+    box.textContent = `❌ AI解读失败：${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 让AI解读';
+  }
+}
+
+// =====================================================
+// UI
+// =====================================================
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('visible');
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('apiProvider').value;
+  document.getElementById('customEndpointRow').style.display = provider === 'custom' ? 'block' : 'none';
+  const hints = {
+    openai: 'OpenAI 推荐：gpt-4o-mini（便宜快速）或 gpt-4o',
+    anthropic: 'Anthropic 推荐：claude-3-5-sonnet-20241014',
+    deepseek: 'DeepSeek 推荐：deepseek-chat',
+    custom: '请填写支持 OpenAI 格式接口的自定义地址'
+  };
+  document.getElementById('modelHint').textContent = hints[provider];
+  const modelDefaults = { openai: 'gpt-4o-mini', anthropic: 'claude-3-5-sonnet-20241014', deepseek: 'deepseek-chat', custom: 'gpt-4o-mini' };
+  document.getElementById('apiModel').value = modelDefaults[provider];
+  saveSettings();
+}
+
+function saveSettings() {
+  const settings = {
+    provider: document.getElementById('apiProvider').value,
+    apiKey: document.getElementById('apiKey').value,
+    apiEndpoint: document.getElementById('apiEndpoint').value,
+    apiModel: document.getElementById('apiModel').value
+  };
+  localStorage.setItem('liuren_settings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('liuren_settings') || '{}');
+    if (s.provider) document.getElementById('apiProvider').value = s.provider;
+    if (s.apiKey) document.getElementById('apiKey').value = s.apiKey;
+    if (s.apiEndpoint) document.getElementById('apiEndpoint').value = s.apiEndpoint;
+    if (s.apiModel) document.getElementById('apiModel').value = s.apiModel;
+    onProviderChange();
+  } catch {}
+}
+
+function switchMethod(method) {
+  document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.method-tab[onclick="switchMethod('${method}')"]`).classList.add('active');
+  document.getElementById(`panel-${method}`).classList.add('active');
+  document.getElementById('resultSection').classList.remove('visible');
+  document.getElementById('calcSteps').classList.remove('visible');
+  document.getElementById('threeResultSection').style.display = 'none';
+  document.getElementById('aiSection').style.display = 'none';
+}
+
+function highlightSlot(hexagramId) {
+  SIX_GODS.forEach(id => document.getElementById(`slot-${id}`).classList.remove('active'));
+  if (hexagramId) document.getElementById(`slot-${hexagramId}`).classList.add('active');
+}
+
+function highlightThreeSlots(ids) {
+  SIX_GODS.forEach(id => document.getElementById(`slot-${id}`).classList.remove('active'));
+  ids.forEach(id => document.getElementById(`slot-${id}`).classList.add('active'));
+}
+
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('visible', show);
+  document.getElementById('castBtn').disabled = show;
+}
+
+function updateDateDisplay() {
+  const sm = parseInt(document.getElementById('solarMonthInput').value, 10);
+  const sd = parseInt(document.getElementById('solarDayInput').value, 10);
+  const display = document.getElementById('dateDisplay');
+  if (!sm || !sd || sm < 1 || sm > 12 || sd < 1 || sd > 31) {
+    display.innerHTML = '<span class="solar-date">请在上方填写阳历日期，自动转换为农历</span>';
+    return;
+  }
+  const now = new Date();
+  const year = sm === now.getMonth() + 1 && sd >=1 && sd <= 31 ? now.getFullYear() : now.getFullYear();
+  const ld = solarToLunar(year, sm, sd);
+  const gz = getGanZhi(year, sm, sd);
+  const shichenIdx = Math.floor(((now.getHours() % 24) * 60 + now.getMinutes() - 23 * 60) / 120);
+  const shichenVal = ((shichenIdx % 12) + 12) % 12;
+
+  display.innerHTML = `
+    <div><span class="solar-date">阳历 ${year}年${sm}月${sd}日</span></div>
+    <div><span class="lunar-date">${formatLunarDate(ld)}</span>干支 <strong>${gz}</strong></div>
+    <div>当前时辰：<strong>${SHICHEN_NAMES[shichenVal]}</strong>（已自动填入）</div>
+  `;
+}
+
+async function performDivination() {
+  const method = document.querySelector('.method-tab.active').getAttribute('onclick').match(/'(\w+)'/)[1];
+  const direction = document.getElementById('direction').value.trim();
+  const category = document.getElementById('category').value.trim();
+  const detail = document.getElementById('detail').value.trim();
+  const now = new Date();
+  const year = now.getFullYear();
+
+  let result, calcText = '';
+
+  if (method === 'datetime') {
+    const sm = parseInt(document.getElementById('solarMonthInput').value, 10);
+    const sd = parseInt(document.getElementById('solarDayInput').value, 10);
+    const hour = parseInt(document.getElementById('hourSelect').value, 10);
+    if (!sm || sm < 1 || sm > 12) { alert('请输入阳历月份（1~12）'); return; }
+    if (!sd || sd < 1 || sd > 31) { alert('请输入阳历日期（1~31）'); return; }
+
+    const ld = solarToLunar(year, sm, sd);
+    result = liurenMonthDayHour(ld.lunarMonth, ld.lunarDay, hour);
+    result.lunarDateStr = `${formatLunarDate(ld)}`;
+    result.shichenIdx = hour;
+    calcText = result.calcText;
+    highlightSlot(result.finalHexagram);
+
+  } else if (method === 'threenum') {
+    const n1 = parseInt(document.getElementById('num1').value, 10);
+    const n2 = parseInt(document.getElementById('num2').value, 10);
+    const n3 = parseInt(document.getElementById('num3').value, 10);
+    if (!n1 || !n2 || !n3) { alert('请输入三个数字'); return; }
+    result = liurenThreeNumbers(n1, n2, n3);
+    calcText = result.calcText;
+    highlightThreeSlots([result.chugong, result.zhonggong, result.mogong]);
+    const thDiv = document.getElementById('threeHexagrams');
+    thDiv.innerHTML = '';
+    [['chugong', result.chugong, '起因（初宫）'], ['zhonggong', result.zhonggong, '过程（中宫）'], ['mogong', result.mogong, '结果（末宫）']].forEach(([key, hexId, role]) => {
+      const h = HEXAGRAMS[hexId];
+      thDiv.innerHTML += `<div class="three-hexagrams-item ${hexId}"><div class="th-icon">${h.icon}</div><div class="th-name">${h.name}</div><div class="th-role">${role}</div></div>`;
+    });
+    document.getElementById('threeResultSection').style.display = 'block';
+
+  } else if (method === 'singlenum') {
+    const numStr = document.getElementById('singleNum').value.trim();
+    if (!numStr) { alert('请输入一个数字'); return; }
+    result = liurenSingleNumber(numStr);
+    if (!result) { alert('输入中未找到数字'); return; }
+    calcText = result.calcText;
+    highlightSlot(result.finalHexagram);
+
+  } else {
+    const numStr = document.getElementById('randomNum').value.trim();
+    if (!numStr) { alert('请输入任意可转化为数字的信息'); return; }
+    result = liurenRandom(numStr);
+    if (!result) { alert('无法提取数字，请换一种方式'); return; }
+    calcText = `随机取数"${numStr}" → ${result.calcText}`;
+    highlightSlot(result.finalHexagram);
+  }
+
+  showLoading(true);
+  document.getElementById('resultSection').classList.remove('visible');
+  document.getElementById('calcSteps').classList.remove('visible');
+  document.getElementById('aiSection').style.display = 'none';
+  document.getElementById('aiBox').style.display = 'none';
+  await new Promise(r => setTimeout(r, 350));
+
+  const hexagram = HEXAGRAMS[result.finalHexagram];
+  currentHexagramData = result;
+
+  document.getElementById('calcSteps').innerHTML = calcText;
+  document.getElementById('calcSteps').classList.add('visible');
+
+  document.getElementById('resultWuxing').innerHTML =
+    `五行属<b>${hexagram.wuxing}</b>（${hexagram.color}）　方位在<b>${hexagram.direction}</b>　司事神将<b>${hexagram.position}</b>　<span style="color:var(--gold)">${hexagram.nature}</span><br>` +
+    `谋事所主数字：<strong>${hexagram.numbers}</strong>${hexagram.description}`;
+
+  document.getElementById('resultVerse').innerHTML =
+    `<div class="verse-title">✦ 传统断辞歌诀</div><div class="verse-text">${hexagram.verse}</div>`;
+
+  const catAdvice = getCategoryAdvice(category);
+  document.getElementById('resultInterpretation').innerHTML =
+    `<strong>总论：</strong>${hexagram.interpretation.general}<br><br>` +
+    `<strong>宜：</strong>${hexagram.interpretation.favorable}<br><br>` +
+    `<strong>忌：</strong>${hexagram.interpretation.unfavorable}<br><br>` +
+    (catAdvice ? `<strong>【事项参考】</strong>${catAdvice}<br><br>` : '') +
+    (detail ? `<strong>【用户提问】</strong>${detail}<br><br>` : '') +
+    `<strong>行动建议：</strong>${hexagram.interpretation.advice}`;
+
+  let paramsText = '';
+  if (method === 'datetime') {
+    const sm = document.getElementById('solarMonthInput').value;
+    const sd = document.getElementById('solarDayInput').value;
+    const hour = parseInt(document.getElementById('hourSelect').value, 10);
+    paramsText = `起课方式：月日时起课（阳历${sm}月${sd}日自动转${result.lunarDateStr}）　${SHICHEN_NAMES[hour]}`;
+  } else if (method === 'threenum') {
+    paramsText = `起课方式：三数起课（变通取数）　初宫（起因）→ 中宫（过程）→ 末宫（结果）`;
+  } else if (method === 'singlenum') {
+    paramsText = `起课方式：单数起课（数字法）`;
+  } else {
+    paramsText = `起课方式：随机取数`;
+  }
+  paramsText += `　地理方位：${direction || '未填写'}　事项类别：${category || '未填写'}`;
+
+  if (direction) {
+    const dirMatch = Object.entries(DIRECTION_MAP).find(([k]) => direction.includes(k) || k.includes(direction));
+    if (dirMatch && dirMatch[1] !== result.finalHexagram) {
+      paramsText += `<br><br>⚠️ 方位交叉：输入方位「${direction}」对应「${HEXAGRAMS[dirMatch[1]].name}」卦，与主卦「${hexagram.name}」不同，可综合参考。`;
+    } else if (dirMatch) {
+      paramsText += `<br><br>✅ 方位契合：方位「${direction}」与主卦「${hexagram.name}」同气相应，大吉。`;
+    }
+  }
+
+  document.getElementById('resultParams').innerHTML = paramsText;
+  document.getElementById('resultIcon').textContent = hexagram.icon;
+  document.getElementById('resultTitle').textContent = hexagram.name;
+  document.getElementById('resultSubtitle').textContent = `${hexagram.wuxing}行 · ${hexagram.color} · ${hexagram.direction} · ${hexagram.position}司事`;
+
+  document.getElementById('resultSection').classList.add('visible');
+  document.getElementById('aiSection').style.display = 'block';
+  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showLoading(false);
+}
+
+// =====================================================
+// Init
+// =====================================================
+function init() {
+  loadSettings();
+  const now = new Date();
+  const sm = now.getMonth() + 1;
+  const sd = now.getDate();
+  document.getElementById('solarMonthInput').value = sm;
+  document.getElementById('solarDayInput').value = sd;
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const shichenIdx = Math.floor(((hours % 24) * 60 + minutes - 23 * 60) / 120);
+  const shichenVal = ((shichenIdx % 12) + 12) % 12;
+  document.getElementById('hourSelect').value = shichenVal;
+  updateDateDisplay();
+}
+init();
+</script>
+</body>
+</html>
