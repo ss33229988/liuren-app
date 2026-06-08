@@ -1,0 +1,15 @@
+{
+  "appId": "com.liuren.app",
+  "appName": "小六壬起卦器",
+  "webDir": "dist",
+  "android": {
+    "allowMixedMode": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#f5f0e8",
+      "showSpinner": false
+    }
+  }
+}
